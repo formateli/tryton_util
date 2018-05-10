@@ -22,8 +22,16 @@
 
 BASE_DIR=$PWD
 
+if [ ! -d "$BASE_DIR/tryton" ]; then
+    mkdir "$BASE_DIR/tryton"
+fi
+
+if [ ! -d "$BASE_DIR/tryton/modules" ]; then
+    mkdir "$BASE_DIR/tryton/modules"
+fi
+
 show_help(){
-    echo $"Usage: $0 { help | init | run | test | download }"
+    echo $"Usage: $0 { help | init | run | test | download | download_sao }"
     exit
 }
 
@@ -43,13 +51,13 @@ verify_dir(){
 
 download_tar(){
     if [ ! -d "$2/$1" ]; then
-        echo " Downloading $1"
-        wget "https://downloads.tryton.org/$TRYTOND_VERSION/$1.tar.gz"
-        mv ./$1.tar.gz $2
+        echo " Downloading $1 ..."
+        wget "https://downloads.tryton.org/$TRYTOND_VERSION/$1.$3"
+        mv ./$1.$3 $2
         echo " Uncompressing..."
-        tar -xzvf $2/$1.tar.gz -C $2
-        echo " deleting tar.gz..."
-        rm -f $2/$1.tar.gz
+        tar -xzvf $2/$1.$3 -C $2
+        echo " deleting $3..."
+        rm -f $2/$1.$3
     fi
 }
 
@@ -60,8 +68,7 @@ ACTION=$1
 MODULE=$2
 
 TRYTOND="$BASE_DIR/tryton/trytond-$TRYTOND_VERSION.$TRYTOND_REVISION"
-download_tar "trytond-$TRYTOND_VERSION.$TRYTOND_REVISION" "$BASE_DIR/tryton"
-verify_dir $TRYTOND
+#verify_dir $TRYTOND
 
 MODULE_DIR=$BASE_DIR/$MODULE
 source $MODULE_DIR/config.sh
@@ -121,14 +128,24 @@ init() {
     $PYTHON $TRYTOND/bin/trytond-admin -v -c $BASE_DIR/trytond.conf -d $MODULE --all
 }
 
+download_sao() {
+    if [ ! -d "$BASE_DIR/tryton/gui" ]; then
+        mkdir "$BASE_DIR/tryton/gui"
+    fi
+    download_tar "tryton-sao-$TRYTOND_VERSION.$TRYTOND_REVISION" "$BASE_DIR/tryton" "tgz"
+    mv "$BASE_DIR/tryton/package" "$BASE_DIR/tryton/sao-$TRYTOND_VERSION.$TRYTOND_REVISION"
+    ln -s "$BASE_DIR/tryton/sao-$TRYTOND_VERSION.$TRYTOND_REVISION" "$BASE_DIR/tryton/gui/sao"
+}
+
 download() {
+    download_tar "trytond-$TRYTOND_VERSION.$TRYTOND_REVISION" "$BASE_DIR/tryton" "tar.gz"
     source $BASE_DIR/tryton/modules/config.sh
     count=0
     while [ "x${CURRENT_MODULES[count]}" != "x" ]
     do
         read NAME REV < <(get_name_rev "${CURRENT_MODULES[count]}")
         DIR_NAME="trytond_$NAME-$TRYTOND_VERSION.$REV"
-        download_tar $DIR_NAME "$BASE_DIR/tryton/modules"
+        download_tar $DIR_NAME "$BASE_DIR/tryton/modules" "tar.gz"
         count=$(( $count + 1 ))
     done
 }
@@ -148,6 +165,10 @@ case "$ACTION" in
 
         download)
             download
+            ;;
+
+        download_sao)
+            download_sao
             ;;
 
         help)
