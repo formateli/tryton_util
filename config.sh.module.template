@@ -1,0 +1,10 @@
+# This file must resides in a directory which name is the module name
+
+MODULE_PATH=/path/to/module
+
+# Pair value: MODULE_NAME:REVISION_NUMBER
+MODULES=(
+    "company 0"
+    "currency 1"
+    "party 0"
+)

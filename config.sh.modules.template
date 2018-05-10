@@ -1,0 +1,8 @@
+# This file must resides in tryton/modules directory
+# It is used when calling tryton_util.sh download 
+
+CURRENT_MODULES=(
+    "company 0"
+    "currency 1"
+    "party 0"
+)
