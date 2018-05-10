@@ -95,7 +95,7 @@ link_modules() {
     while [ "x${MODULES[count]}" != "x" ]
     do
         read NAME REV < <(get_name_rev "${MODULES[count]}")
-        DIRX="$BASE_DIR/modules/trytond_$NAME-$TRYTOND_VERSION.$REV"
+        DIRX="$BASE_DIR/tryton/modules/trytond_$NAME-$TRYTOND_VERSION.$REV"
         verify_dir $DIRX
         echo "Linking $DIRX"
         ln -s $DIRX "$TRYTOND/trytond/modules/$NAME"
