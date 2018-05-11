@@ -31,7 +31,7 @@ if [ ! -d "$BASE_DIR/tryton/modules" ]; then
 fi
 
 show_help(){
-    echo $"Usage: $0 { help | init | run | test | download | download_sao }"
+    echo $"Usage: $0 { help | init | run | test | download | download_sao | update_module }"
     exit
 }
 
@@ -66,6 +66,7 @@ source $BASE_DIR/config.sh
 
 ACTION=$1
 MODULE=$2
+PARAM_3=$3
 
 TRYTOND="$BASE_DIR/tryton/trytond-$TRYTOND_VERSION.$TRYTOND_REVISION"
 #verify_dir $TRYTOND
@@ -128,6 +129,25 @@ init() {
     $PYTHON $TRYTOND/bin/trytond-admin -v -c $BASE_DIR/trytond.conf -d $MODULE --all
 }
 
+update_module(){
+    if [ ! -z "$PARAM_3" ]; then
+        if [ "$PARAM_3" == "all" ]; then
+            source $BASE_DIR/tryton/modules/config.sh
+            count=0
+            while [ "x${CURRENT_MODULES[count]}" != "x" ]
+            do
+                read NAME REV < <(get_name_rev "${CURRENT_MODULES[count]}")
+                MDS=$MDS" "$NAME
+                count=$(( $count + 1 ))
+            done
+        fi
+    fi
+    MDS=$MDS" "$MODULE
+    verify_file "$BASE_DIR/trytond.conf"
+    link_modules
+    $PYTHON $TRYTOND/bin/trytond-admin -v -c "$BASE_DIR/trytond.conf" -d $MODULE -u $MDS
+}
+
 download_sao() {
     if [ ! -d "$BASE_DIR/tryton/gui" ]; then
         mkdir "$BASE_DIR/tryton/gui"
@@ -169,6 +189,10 @@ case "$ACTION" in
 
         download_sao)
             download_sao
+            ;;
+
+        update_module)
+            update_module
             ;;
 
         help)
