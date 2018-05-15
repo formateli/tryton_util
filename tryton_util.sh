@@ -65,16 +65,17 @@ verify_file $BASE_DIR/config.sh
 source $BASE_DIR/config.sh
 
 ACTION=$1
-MODULE=$2
+PARAM_2=$2
 PARAM_3=$3
+PARAM_4=$4
 
 TRYTOND="$BASE_DIR/tryton/trytond-$TRYTOND_VERSION.$TRYTOND_REVISION"
 #verify_dir $TRYTOND
 
-MODULE_DIR=$BASE_DIR/$MODULE
+MODULE_DIR=$BASE_DIR/$PARAM_2
 source $MODULE_DIR/config.sh
 
-echo "Running tool for module $MODULE"
+echo "Running tool for module $PARAM_2"
 
 # Always clean modules
 for entry in "$TRYTOND/trytond/modules"/*
@@ -95,9 +96,15 @@ get_name_rev(){
 }
 
 link_modules() {
-    # Symbolic link for $MODULE
-    verify_dir $MODULE_PATH
-    ln -s $MODULE_PATH $TRYTOND/trytond/modules/$MODULE
+    if [ ! -z "$1" ]; then
+        if [ "$1" != "ignore-module" ]; then
+            verify_dir $MODULE_PATH
+            ln -s $MODULE_PATH $TRYTOND/trytond/modules/$PARAM_2
+        fi
+    else
+        verify_dir $MODULE_PATH
+        ln -s $MODULE_PATH $TRYTOND/trytond/modules/$PARAM_2
+    fi
 
     count=0
     while [ "x${MODULES[count]}" != "x" ]
@@ -121,12 +128,12 @@ run() {
 test() {
     export PYTHONPATH=$TRYTOND
     link_modules
-    $PYTHON $TRYTOND/trytond/tests/run-tests.py -v -f -m $MODULE
+    $PYTHON $TRYTOND/trytond/tests/run-tests.py -v -f -m $PARAM_2
 }
 
 init() {
     verify_file "$BASE_DIR/trytond.conf"
-    $PYTHON $TRYTOND/bin/trytond-admin -v -c $BASE_DIR/trytond.conf -d $MODULE --all
+    $PYTHON $TRYTOND/bin/trytond-admin -v -c $BASE_DIR/trytond.conf -d $PARAM_2 --all
 }
 
 update_module(){
@@ -142,10 +149,16 @@ update_module(){
             done
         fi
     fi
-    MDS=$MDS" "$MODULE
+    if [ ! -z "$PARAM_4" ]; then
+        if [ "$PARAM_4" != "ignore-module" ]; then
+            MDS=$MDS" "$PARAM_2
+        fi
+    else
+        MDS=$MDS" "$PARAM_2
+    fi
     verify_file "$BASE_DIR/trytond.conf"
-    link_modules
-    $PYTHON $TRYTOND/bin/trytond-admin -v -c "$BASE_DIR/trytond.conf" -d $MODULE -u $MDS
+    link_modules $PARAM_4
+    $PYTHON $TRYTOND/bin/trytond-admin -v -c "$BASE_DIR/trytond.conf" -d $PARAM_2 -u $MDS
 }
 
 download_sao() {
