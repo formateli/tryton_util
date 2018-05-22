@@ -62,7 +62,7 @@ download_tar(){
 }
 
 verify_file $BASE_DIR/config.sh
-source $BASE_DIR/config.sh
+source $BASE_DIR/config.sh # Get TRYTOND_VERSION, TRYTOND_REVISION AND PYTHON
 
 ACTION=$1
 PARAM_2=$2
@@ -70,7 +70,6 @@ PARAM_3=$3
 PARAM_4=$4
 
 TRYTOND="$BASE_DIR/tryton/trytond-$TRYTOND_VERSION.$TRYTOND_REVISION"
-#verify_dir $TRYTOND
 
 MODULE_DIR=$BASE_DIR/$PARAM_2
 source $MODULE_DIR/config.sh
@@ -139,11 +138,10 @@ init() {
 update_module(){
     if [ ! -z "$PARAM_3" ]; then
         if [ "$PARAM_3" == "all" ]; then
-            source $BASE_DIR/tryton/modules/config.sh
             count=0
-            while [ "x${CURRENT_MODULES[count]}" != "x" ]
+            while [ "x${MODULES[count]}" != "x" ]
             do
-                read NAME REV < <(get_name_rev "${CURRENT_MODULES[count]}")
+                read NAME REV < <(get_name_rev "${MODULES[count]}")
                 MDS=$MDS" "$NAME
                 count=$(( $count + 1 ))
             done
