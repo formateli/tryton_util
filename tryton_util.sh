@@ -118,9 +118,11 @@ get_name_rev(){
 link_modules() {
     echo "Linking modules..."
     if [ "$1" == 0 ]; then # ignore module
-        echo " $MODULE"
         verify_dir $MODULE_PATH
-        ln -s $MODULE_PATH $TRYTOND/trytond/modules/$MODULE
+        if [ ! -d "$TRYTOND/trytond/modules/$MODULE" ]; then
+            echo " $MODULE"
+            ln -s $MODULE_PATH $TRYTOND/trytond/modules/$MODULE
+        fi
     fi
 
     count=0
@@ -134,9 +136,10 @@ link_modules() {
         fi
 
         verify_dir $DIRX
-        echo " $NAME"
-        ln -s $DIRX "$TRYTOND/trytond/modules/$NAME"
-
+        if [ ! -d "$TRYTOND/trytond/modules/$NAME" ]; then
+            echo " $NAME"
+            ln -s $DIRX "$TRYTOND/trytond/modules/$NAME"
+        fi
         count=$(( $count + 1 ))
     done
 }
