@@ -70,14 +70,16 @@ ACTION=""
 DATABASE=""
 MODULE=""
 IGNORE_MODULE=0
+UNLINK=0
 
-while getopts a:d:m:i option
+while getopts a:d:m:iu option
 do
 case "${option}" in
         a) ACTION=${OPTARG};;
         d) DATABASE=${OPTARG};;
         m) MODULE=${OPTARG};;
         i) IGNORE_MODULE=1;;
+        u) UNLINK=1;;
     esac
 done
 
@@ -89,24 +91,20 @@ MODULE_PATH=$DEVELOP_PATH/$DEVELOP_NAME
 
 echo "Running tool for module $MODULE"
 
-# Always clean modules
-echo "Unlinking modules..."
-for entry in "$TRYTOND/trytond/modules"/*
-do
-  if [ -d "$entry" ]; then
-    echo " $entry"
-    unlink $entry
-  fi
-done
+if [ "$UNLINK" == 1 ]; then
+    echo "Unlinking modules..."
+    for entry in "$TRYTOND/trytond/modules"/*
+    do
+      if [ -d "$entry" ]; then
+        echo " $entry"
+        unlink $entry
+      fi
+    done
+fi
 
 if [ "$DATABASE" == "" ]; then
     DATABASE=$MODULE
 fi
-
-echo "act=$ACTION"
-echo "db=$DATABASE"
-echo "ig=$IGNORE_MODULE"
-echo "md=$MODULE"
 
 get_name_rev(){
     INDEX=`expr index "$1" " "`
