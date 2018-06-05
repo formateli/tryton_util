@@ -62,56 +62,81 @@ download_tar(){
 }
 
 verify_file $BASE_DIR/config.sh
-source $BASE_DIR/config.sh # Get TRYTOND_VERSION, TRYTOND_REVISION AND PYTHON
+source $BASE_DIR/config.sh # Get TRYTOND_VERSION, TRYTOND_REVISION, PYTHON, DEVELOP_PATH
 
-ACTION=$1
-PARAM_2=$2
 PARAM_3=$3
-PARAM_4=$4
+
+ACTION=""
+DATABASE=""
+MODULE=""
+IGNORE_MODULE=0
+
+while getopts a:d:m:i option
+do
+case "${option}" in
+        a) ACTION=${OPTARG};;
+        d) DATABASE=${OPTARG};;
+        m) MODULE=${OPTARG};;
+        i) IGNORE_MODULE=1;;
+    esac
+done
 
 TRYTOND="$BASE_DIR/tryton/trytond-$TRYTOND_VERSION.$TRYTOND_REVISION"
 
-MODULE_DIR=$BASE_DIR/$PARAM_2
-source $MODULE_DIR/config.sh
+MODULE_DIR=$BASE_DIR/$MODULE
+source $MODULE_DIR/config.sh   # Get MODULES, DEVELOP_NAME
+MODULE_PATH=$DEVELOP_PATH/$DEVELOP_NAME
 
-echo "Running tool for module $PARAM_2"
+echo "Running tool for module $MODULE"
 
 # Always clean modules
+echo "Unlinking modules..."
 for entry in "$TRYTOND/trytond/modules"/*
 do
   if [ -d "$entry" ]; then
-    echo "Unlinking $entry"
+    echo " $entry"
     unlink $entry
   fi
 done
 
+if [ "$DATABASE" == "" ]; then
+    DATABASE=$MODULE
+fi
+
+echo "act=$ACTION"
+echo "db=$DATABASE"
+echo "ig=$IGNORE_MODULE"
+echo "md=$MODULE"
+
 get_name_rev(){
     INDEX=`expr index "$1" " "`
     NAME_INDEX=$(($INDEX - 1))
-    REV_INDEX=$(($INDEX + 1))
-    NM=`expr substr "$1" 1 $NAME_INDEX`
-    RV=`expr substr "$1" $REV_INDEX $(($REV_INDEX + 1))`
+    EXP=$1
+    NM=${EXP:0:$NAME_INDEX}
+    RV=${EXP:$INDEX}
     echo "$NM $RV"
 }
 
 link_modules() {
-    if [ ! -z "$1" ]; then
-        if [ "$1" != "ignore-module" ]; then
-            verify_dir $MODULE_PATH
-            ln -s $MODULE_PATH $TRYTOND/trytond/modules/$PARAM_2
-        fi
-    else
+    echo "Linking modules..."
+    if [ "$1" == 0 ]; then # ignore module
+        echo " $MODULE"
         verify_dir $MODULE_PATH
-        ln -s $MODULE_PATH $TRYTOND/trytond/modules/$PARAM_2
+        ln -s $MODULE_PATH $TRYTOND/trytond/modules/$MODULE
     fi
 
     count=0
     while [ "x${MODULES[count]}" != "x" ]
     do
         read NAME REV < <(get_name_rev "${MODULES[count]}")
-        DIRX="$BASE_DIR/tryton/modules/trytond_$NAME-$TRYTOND_VERSION.$REV"
+        if [[ $REV == ?(-)+([0-9]) ]]; then
+            DIRX="$BASE_DIR/tryton/modules/trytond_$NAME-$TRYTOND_VERSION.$REV"
+        else
+            DIRX="$DEVELOP_PATH/$REV"
+        fi
+
         verify_dir $DIRX
-        echo "Linking $DIRX"
+        echo " $NAME"
         ln -s $DIRX "$TRYTOND/trytond/modules/$NAME"
 
         count=$(( $count + 1 ))
@@ -120,43 +145,39 @@ link_modules() {
 
 run() {
     verify_file "$BASE_DIR/trytond.conf"
-    link_modules
+    link_modules 0
     $PYTHON $TRYTOND/bin/trytond -v -c $BASE_DIR/trytond.conf
 }
 
 test() {
     export PYTHONPATH=$TRYTOND
-    link_modules
-    $PYTHON $TRYTOND/trytond/tests/run-tests.py -v -f -m $PARAM_2
+    link_modules 0
+    $PYTHON $TRYTOND/trytond/tests/run-tests.py -v -f -m $MODULE
 }
 
 init() {
     verify_file "$BASE_DIR/trytond.conf"
-    $PYTHON $TRYTOND/bin/trytond-admin -v -c $BASE_DIR/trytond.conf -d $PARAM_2 --all
+    $PYTHON $TRYTOND/bin/trytond-admin -v -c $BASE_DIR/trytond.conf -d $MODULE --all
 }
 
 update_module(){
-    if [ ! -z "$PARAM_3" ]; then
-        if [ "$PARAM_3" == "all" ]; then
-            count=0
-            while [ "x${MODULES[count]}" != "x" ]
-            do
-                read NAME REV < <(get_name_rev "${MODULES[count]}")
-                MDS=$MDS" "$NAME
-                count=$(( $count + 1 ))
-            done
-        fi
+    if [ "$ALL" == 1 ]; then
+        count=0
+        while [ "x${MODULES[count]}" != "x" ]
+        do
+            read NAME REV < <(get_name_rev "${MODULES[count]}")
+            MDS=$MDS" "$NAME
+            count=$(( $count + 1 ))
+        done
     fi
-    if [ ! -z "$PARAM_4" ]; then
-        if [ "$PARAM_4" != "ignore-module" ]; then
-            MDS=$MDS" "$PARAM_2
-        fi
-    else
-        MDS=$MDS" "$PARAM_2
+
+    if [ "$IGNORE_MODULE" == 0 ]; then
+        MDS=$MDS" "$MODULE
     fi
+
     verify_file "$BASE_DIR/trytond.conf"
-    link_modules $PARAM_4
-    $PYTHON $TRYTOND/bin/trytond-admin -v -c "$BASE_DIR/trytond.conf" -d $PARAM_2 -u $MDS
+    link_modules $IGNORE_MODULE
+    $PYTHON $TRYTOND/bin/trytond-admin -v -c "$BASE_DIR/trytond.conf" -d $DATABASE -u $MDS
 }
 
 download_sao() {
