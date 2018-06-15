@@ -71,8 +71,9 @@ DATABASE=""
 MODULE=""
 IGNORE_MODULE=0
 UNLINK=0
+ALL=0
 
-while getopts a:d:m:iu option
+while getopts a:d:m:iux option
 do
 case "${option}" in
         a) ACTION=${OPTARG};;
@@ -80,6 +81,7 @@ case "${option}" in
         m) MODULE=${OPTARG};;
         i) IGNORE_MODULE=1;;
         u) UNLINK=1;;
+        x) ALL=1;;
     esac
 done
 
@@ -175,7 +177,7 @@ update_module(){
     if [ "$IGNORE_MODULE" == 0 ]; then
         MDS=$MDS" "$MODULE
     fi
-
+    echo $MDS
     verify_file "$BASE_DIR/trytond.conf"
     link_modules $IGNORE_MODULE
     $PYTHON $TRYTOND/bin/trytond-admin -v -c "$BASE_DIR/trytond.conf" -d $DATABASE -u $MDS
