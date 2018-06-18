@@ -62,9 +62,7 @@ download_tar(){
 }
 
 verify_file $BASE_DIR/config.sh
-source $BASE_DIR/config.sh # Get TRYTOND_VERSION, TRYTOND_REVISION, PYTHON, DEVELOP_PATH
-
-PARAM_3=$3
+source $BASE_DIR/config.sh # Get TRYTOND_VERSION, TRYTOND_REVISION, SAO_REVISION, PYTHON, DEVELOP_PATH
 
 ACTION=""
 DATABASE=""
@@ -187,9 +185,9 @@ download_sao() {
     if [ ! -d "$BASE_DIR/tryton/gui" ]; then
         mkdir "$BASE_DIR/tryton/gui"
     fi
-    download_tar "tryton-sao-$TRYTOND_VERSION.$TRYTOND_REVISION" "$BASE_DIR/tryton" "tgz"
-    mv "$BASE_DIR/tryton/package" "$BASE_DIR/tryton/sao-$TRYTOND_VERSION.$TRYTOND_REVISION"
-    ln -s "$BASE_DIR/tryton/sao-$TRYTOND_VERSION.$TRYTOND_REVISION" "$BASE_DIR/tryton/gui/sao"
+    download_tar "tryton-sao-$TRYTOND_VERSION.$SAO_REVISION" "$BASE_DIR/tryton" "tgz"
+    mv "$BASE_DIR/tryton/package" "$BASE_DIR/tryton/sao-$TRYTOND_VERSION.$SAO_REVISION"
+    ln -s "$BASE_DIR/tryton/sao-$TRYTOND_VERSION.$SAO_REVISION" "$BASE_DIR/tryton/gui/sao"
 }
 
 download() {
