@@ -31,7 +31,7 @@ if [ ! -d "$BASE_DIR/tryton/modules" ]; then
 fi
 
 show_help(){
-    echo $"Usage: $0 { help | init | run | test | download | download_sao | update_module }"
+    echo $"Usage: $0 { help | init | run | test | download | download_sao | update_module | set_password }"
     exit
 }
 
@@ -161,6 +161,11 @@ init() {
     $PYTHON $TRYTOND/bin/trytond-admin -v -c $BASE_DIR/trytond.conf -d $MODULE --all
 }
 
+set_password(){
+    verify_file "$BASE_DIR/trytond.conf"
+    $PYTHON $TRYTOND/bin/trytond-admin -v -c "$BASE_DIR/trytond.conf" -d $DATABASE -p
+}
+
 update_module(){
     if [ "$ALL" == 1 ]; then
         count=0
@@ -175,7 +180,6 @@ update_module(){
     if [ "$IGNORE_MODULE" == 0 ]; then
         MDS=$MDS" "$MODULE
     fi
-    echo $MDS
     verify_file "$BASE_DIR/trytond.conf"
     link_modules $IGNORE_MODULE
     $PYTHON $TRYTOND/bin/trytond-admin -v -c "$BASE_DIR/trytond.conf" -d $DATABASE -u $MDS
@@ -226,6 +230,10 @@ case "$ACTION" in
 
         update_module)
             update_module
+            ;;
+
+        set_password)
+            set_password
             ;;
 
         help)
