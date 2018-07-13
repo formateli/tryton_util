@@ -158,7 +158,7 @@ test() {
 
 init() {
     verify_file "$BASE_DIR/trytond.conf"
-    $PYTHON $TRYTOND/bin/trytond-admin -v -c $BASE_DIR/trytond.conf -d $MODULE --all
+    $PYTHON $TRYTOND/bin/trytond-admin -v -c $BASE_DIR/trytond.conf -d $DATABASE --all
 }
 
 set_password(){
