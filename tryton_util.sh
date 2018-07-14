@@ -194,6 +194,18 @@ download_sao() {
     ln -s "$BASE_DIR/tryton/sao-$TRYTOND_VERSION.$SAO_REVISION" "$BASE_DIR/tryton/gui/sao"
 }
 
+install_sao() {
+    cd "$BASE_DIR/tryton/sao-$TRYTOND_VERSION.$SAO_REVISION"
+    echo "Updating npm..."
+    npm update -g npm
+    echo "npm installing..."
+    npm install
+    echo "bower installing..."
+    bower install
+    echo "grunt..."
+    grunt
+}
+
 download() {
     download_tar "trytond-$TRYTOND_VERSION.$TRYTOND_REVISION" "$BASE_DIR/tryton" "tar.gz"
     source $BASE_DIR/tryton/modules/config.sh
@@ -226,6 +238,10 @@ case "$ACTION" in
 
         download_sao)
             download_sao
+            ;;
+
+        install_sao)
+            install_sao
             ;;
 
         update_module)
