@@ -31,7 +31,7 @@ if [ ! -d "$BASE_DIR/tryton/modules" ]; then
 fi
 
 show_help(){
-    echo $"Usage: $0 { help | init | run | test | download | download_sao | update_module | set_password }"
+    echo $"Usage: $0 { help | init | run | test | download | download_sao | update_module | set_password | ulink}"
     exit
 }
 
@@ -68,17 +68,15 @@ ACTION=""
 DATABASE=""
 MODULE=""
 IGNORE_MODULE=0
-UNLINK=0
 ALL=0
 
-while getopts a:d:m:iux option
+while getopts a:d:m:ix option
 do
 case "${option}" in
         a) ACTION=${OPTARG};;
         d) DATABASE=${OPTARG};;
         m) MODULE=${OPTARG};;
         i) IGNORE_MODULE=1;;
-        u) UNLINK=1;;
         x) ALL=1;;
     esac
 done
@@ -90,17 +88,6 @@ source $MODULE_DIR/config.sh   # Get MODULES, DEVELOP_NAME
 MODULE_PATH=$DEVELOP_PATH/$DEVELOP_NAME
 
 echo "Running tool for module $MODULE"
-
-if [ "$UNLINK" == 1 ]; then
-    echo "Unlinking modules..."
-    for entry in "$TRYTOND/trytond/modules"/*
-    do
-      if [ -d "$entry" ]; then
-        echo " $entry"
-        unlink $entry
-      fi
-    done
-fi
 
 if [ "$DATABASE" == "" ]; then
     DATABASE=$MODULE
@@ -219,6 +206,17 @@ download() {
     done
 }
 
+ulink() {
+    echo "Unlinking modules..."
+    for entry in "$TRYTOND/trytond/modules"/*
+    do
+      if [ -d "$entry" ]; then
+        echo " $entry"
+        unlink $entry
+      fi
+    done
+}
+
 case "$ACTION" in
         run)
             run
@@ -250,6 +248,10 @@ case "$ACTION" in
 
         set_password)
             set_password
+            ;;
+
+        ulink)
+            ulink
             ;;
 
         help)
