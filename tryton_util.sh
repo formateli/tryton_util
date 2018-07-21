@@ -206,6 +206,11 @@ download() {
     done
 }
 
+
+lnk() {
+    link_modules $IGNORE_MODULE
+}
+
 ulink() {
     echo "Unlinking modules..."
     for entry in "$TRYTOND/trytond/modules"/*
@@ -248,6 +253,10 @@ case "$ACTION" in
 
         set_password)
             set_password
+            ;;
+
+        lnk)
+            lnk
             ;;
 
         ulink)
