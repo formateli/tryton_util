@@ -26,8 +26,8 @@ if [ ! -d "$BASE_DIR/tryton" ]; then
     mkdir "$BASE_DIR/tryton"
 fi
 
-if [ ! -d "$BASE_DIR/tryton/modules" ]; then
-    mkdir "$BASE_DIR/tryton/modules"
+if [ ! -d "$BASE_DIR/tryton/gui" ]; then
+    mkdir "$BASE_DIR/tryton/gui"
 fi
 
 show_help(){
@@ -62,36 +62,29 @@ download_tar(){
 }
 
 verify_file $BASE_DIR/config.sh
-source $BASE_DIR/config.sh # Get TRYTOND_VERSION, TRYTOND_REVISION, SAO_REVISION, PYTHON, DEVELOP_PATH
+
+# Get TRYTOND_VERSION, TRYTOND_REVISION, SAO_REVISION,
+# PYTHON, DEVELOP_PATH, REPORITORY_PATH, MODULES
+source $BASE_DIR/config.sh
 
 ACTION=""
 DATABASE=""
 MODULE=""
-IGNORE_MODULE=0
 ALL=0
 
-while getopts a:d:m:ix option
+while getopts a:d:m:x option
 do
 case "${option}" in
         a) ACTION=${OPTARG};;
         d) DATABASE=${OPTARG};;
         m) MODULE=${OPTARG};;
-        i) IGNORE_MODULE=1;;
         x) ALL=1;;
     esac
 done
 
 TRYTOND="$BASE_DIR/tryton/trytond-$TRYTOND_VERSION.$TRYTOND_REVISION"
 
-MODULE_DIR=$BASE_DIR/$MODULE
-source $MODULE_DIR/config.sh   # Get MODULES, DEVELOP_NAME
-MODULE_PATH=$DEVELOP_PATH/$DEVELOP_NAME
-
 echo "Running tool for module $MODULE"
-
-if [ "$DATABASE" == "" ]; then
-    DATABASE=$MODULE
-fi
 
 get_name_rev(){
     INDEX=`expr index "$1" " "`
@@ -104,20 +97,12 @@ get_name_rev(){
 
 link_modules() {
     echo "Linking modules..."
-    if [ "$1" == 0 ]; then # ignore module
-        verify_dir $MODULE_PATH
-        if [ ! -d "$TRYTOND/trytond/modules/$MODULE" ]; then
-            echo " $MODULE"
-            ln -s $MODULE_PATH $TRYTOND/trytond/modules/$MODULE
-        fi
-    fi
-
     count=0
     while [ "x${MODULES[count]}" != "x" ]
     do
         read NAME REV < <(get_name_rev "${MODULES[count]}")
         if [[ $REV == ?(-)+([0-9]) ]]; then
-            DIRX="$BASE_DIR/tryton/modules/trytond_$NAME-$TRYTOND_VERSION.$REV"
+            DIRX="$REPORITORY_PATH/trytond_$NAME-$TRYTOND_VERSION.$REV"
         else
             DIRX="$DEVELOP_PATH/$REV"
         fi
@@ -133,13 +118,13 @@ link_modules() {
 
 run() {
     verify_file "$BASE_DIR/trytond.conf"
-    link_modules 0
+    link_modules
     $PYTHON $TRYTOND/bin/trytond -v -c $BASE_DIR/trytond.conf
 }
 
 test() {
     export PYTHONPATH=$TRYTOND
-    link_modules 0
+    link_modules
     $PYTHON $TRYTOND/trytond/tests/run-tests.py -v -f -m $MODULE
 }
 
@@ -162,13 +147,12 @@ update_module(){
             MDS=$MDS" "$NAME
             count=$(( $count + 1 ))
         done
+    else
+        MDS=$MODULE
     fi
 
-    if [ "$IGNORE_MODULE" == 0 ]; then
-        MDS=$MDS" "$MODULE
-    fi
     verify_file "$BASE_DIR/trytond.conf"
-    link_modules $IGNORE_MODULE
+    link_modules
     $PYTHON $TRYTOND/bin/trytond-admin -v -c "$BASE_DIR/trytond.conf" -d $DATABASE -u $MDS
 }
 
@@ -195,20 +179,21 @@ install_sao() {
 
 download() {
     download_tar "trytond-$TRYTOND_VERSION.$TRYTOND_REVISION" "$BASE_DIR/tryton" "tar.gz"
-    source $BASE_DIR/tryton/modules/config.sh
     count=0
-    while [ "x${CURRENT_MODULES[count]}" != "x" ]
+    while [ "x${MODULES[count]}" != "x" ]
     do
-        read NAME REV < <(get_name_rev "${CURRENT_MODULES[count]}")
-        DIR_NAME="trytond_$NAME-$TRYTOND_VERSION.$REV"
-        download_tar $DIR_NAME "$BASE_DIR/tryton/modules" "tar.gz"
+        read NAME REV < <(get_name_rev "${MODULES[count]}")
+        if [[ $REV == ?(-)+([0-9]) ]]; then
+            DIR_NAME="trytond_$NAME-$TRYTOND_VERSION.$REV"
+            download_tar $DIR_NAME "$REPORITORY_PATH" "tar.gz"
+        fi
         count=$(( $count + 1 ))
     done
 }
 
 
 lnk() {
-    link_modules $IGNORE_MODULE
+    link_modules
 }
 
 ulink() {
