@@ -3,4 +3,25 @@
 
 TRYTOND_VERSION=Mayor.Minor
 TRYTOND_REVISION=Revision
+SAO_REVISION=SaoRevision
 PYTHON=/path/to/venv/bin/python
+DEVELOP_PATH=/PATH/TO/CUSTOM/MODULES
+REPORITORY_PATH=/PATH/WHERE/TRYTON_MODULES/ARE/DOWNLOADED
+
+# Last three are custom modules
+MODULES=(
+    "account 2"
+    "account_invoice 1"
+    "account_invoice_stock 0"
+    "account_product 0"
+    "company 0"
+    "country 1"
+    "currency 1"
+    "party 1"
+    "product 0"
+    "purchase 2"
+    "stock 1"
+    "nuntiare trytond_nuntiare"
+    "account_pa trytond_account_pa"
+    "rrhh trytond_rrhh"
+)
