@@ -20,19 +20,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-BASE_DIR=$PWD
+BASE_DIR="$PWD"
 
-if [ ! -d "$BASE_DIR/tryton" ]; then
-    mkdir "$BASE_DIR/tryton"
-fi
-
-if [ ! -d "$BASE_DIR/tryton/gui" ]; then
-    mkdir "$BASE_DIR/tryton/gui"
-fi
 
 show_help(){
     echo $"Usage: $0 { help | init | run | test | download | download_sao | update_module | set_password | ulink}"
     exit
+}
+
+create_dir(){
+    if [ ! -d "$1" ]; then
+        mkdir "$1"
+    fi
 }
 
 verify_file(){
@@ -61,20 +60,16 @@ download_tar(){
     fi
 }
 
-verify_file $BASE_DIR/config.sh
-
-# Get TRYTOND_VERSION, TRYTOND_REVISION, SAO_REVISION,
-# PYTHON, DEVELOP_PATH, REPORITORY_PATH, MODULES
-source $BASE_DIR/config.sh
-
+SYSTEM="???"
 ACTION=""
 DATABASE=""
 MODULE=""
 ALL=0
 
-while getopts a:d:m:x option
+while getopts s:a:d:m:x option
 do
 case "${option}" in
+        s) SYSTEM=${OPTARG};;
         a) ACTION=${OPTARG};;
         d) DATABASE=${OPTARG};;
         m) MODULE=${OPTARG};;
@@ -82,7 +77,21 @@ case "${option}" in
     esac
 done
 
-TRYTOND="$BASE_DIR/tryton/trytond-$TRYTOND_VERSION.$TRYTOND_REVISION"
+BASE_DIR="$PWD/$SYSTEM"
+verify_dir $BASE_DIR
+verify_file $BASE_DIR/config.sh
+
+# Get TRYTOND_VERSION, TRYTOND_REVISION, SAO_REVISION,
+# PYTHON, DEVELOP_PATH, REPOSITORY_PATH, MODULES
+source $BASE_DIR/config.sh
+
+verify_dir $REPOSITORY_PATH
+REPOSITORY_PATH="$REPOSITORY_PATH/$TRYTOND_VERSION"
+create_dir "$REPOSITORY_PATH"
+create_dir "$REPOSITORY_PATH/modules"
+create_dir "$REPOSITORY_PATH/gui"
+
+TRYTOND="$REPOSITORY_PATH/trytond-$TRYTOND_VERSION.$TRYTOND_REVISION"
 
 echo "Running tool for module $MODULE"
 
@@ -96,13 +105,14 @@ get_name_rev(){
 }
 
 link_modules() {
+    ulink
     echo "Linking modules..."
     count=0
     while [ "x${MODULES[count]}" != "x" ]
     do
         read NAME REV < <(get_name_rev "${MODULES[count]}")
         if [[ $REV == ?(-)+([0-9]) ]]; then
-            DIRX="$REPORITORY_PATH/trytond_$NAME-$TRYTOND_VERSION.$REV"
+            DIRX="$REPOSITORY_PATH/modules/trytond_$NAME-$TRYTOND_VERSION.$REV"
         else
             DIRX="$DEVELOP_PATH/$REV"
         fi
@@ -156,17 +166,18 @@ update_module(){
     $PYTHON $TRYTOND/bin/trytond-admin -v -c "$BASE_DIR/trytond.conf" -d $DATABASE -u $MDS
 }
 
+link_sao() {
+    ln -s "$REPOSITORY_PATH/gui/sao-$TRYTOND_VERSION.$SAO_REVISION" "$BASE_DIR/sao"
+}
+
 download_sao() {
-    if [ ! -d "$BASE_DIR/tryton/gui" ]; then
-        mkdir "$BASE_DIR/tryton/gui"
-    fi
-    download_tar "tryton-sao-$TRYTOND_VERSION.$SAO_REVISION" "$BASE_DIR/tryton" "tgz"
-    mv "$BASE_DIR/tryton/package" "$BASE_DIR/tryton/sao-$TRYTOND_VERSION.$SAO_REVISION"
-    ln -s "$BASE_DIR/tryton/sao-$TRYTOND_VERSION.$SAO_REVISION" "$BASE_DIR/tryton/gui/sao"
+    download_tar "tryton-sao-$TRYTOND_VERSION.$SAO_REVISION" "$REPOSITORY_PATH/gui" "tgz"
+    mv "$REPOSITORY_PATH/gui/package" "$REPOSITORY_PATH/gui/sao-$TRYTOND_VERSION.$SAO_REVISION"
+    link_sao
 }
 
 install_sao() {
-    cd "$BASE_DIR/tryton/sao-$TRYTOND_VERSION.$SAO_REVISION"
+    cd "$REPOSITORY_PATH/gui/sao-$TRYTOND_VERSION.$SAO_REVISION"
     echo "Updating npm..."
     npm update -g npm
     echo "npm installing..."
@@ -178,14 +189,14 @@ install_sao() {
 }
 
 download() {
-    download_tar "trytond-$TRYTOND_VERSION.$TRYTOND_REVISION" "$BASE_DIR/tryton" "tar.gz"
+    download_tar "trytond-$TRYTOND_VERSION.$TRYTOND_REVISION" "$REPOSITORY_PATH" "tar.gz"
     count=0
     while [ "x${MODULES[count]}" != "x" ]
     do
         read NAME REV < <(get_name_rev "${MODULES[count]}")
         if [[ $REV == ?(-)+([0-9]) ]]; then
             DIR_NAME="trytond_$NAME-$TRYTOND_VERSION.$REV"
-            download_tar $DIR_NAME "$REPORITORY_PATH" "tar.gz"
+            download_tar $DIR_NAME "$REPOSITORY_PATH/modules" "tar.gz"
         fi
         count=$(( $count + 1 ))
     done
