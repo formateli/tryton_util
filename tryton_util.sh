@@ -77,6 +77,10 @@ case "${option}" in
     esac
 done
 
+if [ "$ACTION" == "" ]; then
+    show_help
+fi
+
 BASE_DIR="$PWD/$SYSTEM"
 verify_dir $BASE_DIR
 verify_file $BASE_DIR/config.sh
@@ -167,6 +171,7 @@ update_module(){
 }
 
 link_sao() {
+    unlink "$BASE_DIR/sao"
     ln -s "$REPOSITORY_PATH/gui/sao-$TRYTOND_VERSION.$SAO_REVISION" "$BASE_DIR/sao"
 }
 
