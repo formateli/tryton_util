@@ -136,6 +136,11 @@ run() {
     $PYTHON $TRYTOND/bin/trytond -v -c $BASE_DIR/trytond.conf
 }
 
+run_cron() {
+    verify_file "$BASE_DIR/trytond.conf"
+    $PYTHON $TRYTOND/bin/trytond-cron -v -c $BASE_DIR/trytond.conf -d $DATABASE
+}
+
 test() {
     export PYTHONPATH=$TRYTOND
     link_modules
@@ -226,6 +231,10 @@ ulink() {
 case "$ACTION" in
         run)
             run
+            ;;
+
+        run_cron)
+            run_cron
             ;;
 
         init)
