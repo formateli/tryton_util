@@ -51,7 +51,7 @@ verify_dir(){
 download_tar(){
     if [ ! -d "$2/$1" ]; then
         echo " Downloading $1 ..."
-        wget "--no-check-certificate https://downloads.tryton.org/$TRYTOND_VERSION/$1.$3"
+        wget "https://downloads.tryton.org/$TRYTOND_VERSION/$1.$3"
         mv ./$1.$3 $2
         echo " Uncompressing..."
         tar -xzvf $2/$1.$3 -C $2
