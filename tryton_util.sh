@@ -257,6 +257,10 @@ case "$ACTION" in
             install_sao
             ;;
 
+        link_sao)
+            link_sao
+            ;;
+
         update_module)
             update_module
             ;;
