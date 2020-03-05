@@ -150,6 +150,7 @@ test() {
 
 init() {
     verify_file "$BASE_DIR/trytond.conf"
+    link_modules
     $PYTHON $TRYTOND/bin/trytond-admin -v -c $BASE_DIR/trytond.conf -d $DATABASE --all
 }
 
