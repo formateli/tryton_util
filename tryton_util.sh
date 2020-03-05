@@ -182,6 +182,10 @@ link_sao() {
     ln -s "$REPOSITORY_PATH/gui/sao-$TRYTOND_VERSION.$SAO_REVISION" "$BASE_DIR/sao"
 }
 
+download_proteus() {
+    download_tar "proteus-$TRYTOND_VERSION.$PROTEUS_REVISION" "$REPOSITORY_PATH/gui" "tar.gz"
+}
+
 download_sao() {
     download_tar "tryton-sao-$TRYTOND_VERSION.$SAO_REVISION" "$REPOSITORY_PATH/gui" "tgz"
     mv "$REPOSITORY_PATH/gui/package" "$REPOSITORY_PATH/gui/sao-$TRYTOND_VERSION.$SAO_REVISION"
@@ -261,6 +265,10 @@ case "$ACTION" in
 
         link_sao)
             link_sao
+            ;;
+
+        download_proteus)
+            download_proteus
             ;;
 
         update_module)
