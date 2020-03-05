@@ -186,6 +186,18 @@ download_proteus() {
     download_tar "proteus-$TRYTOND_VERSION.$PROTEUS_REVISION" "$REPOSITORY_PATH/gui" "tar.gz"
 }
 
+import_countries() {
+    export PYTHONPATH="$TRYTOND:$REPOSITORY_PATH/gui/proteus-$TRYTOND_VERSION.$PROTEUS_REVISION"
+    SCRIPT="$REPOSITORY_PATH/modules/trytond_country-$TRYTOND_VERSION.$COUNTRY_REVISION/scripts/import_countries.py"
+    $PYTHON $SCRIPT -d $DATABASE -c "$BASE_DIR/trytond.conf"
+}
+
+import_currencies() {
+    export PYTHONPATH="$TRYTOND:$REPOSITORY_PATH/gui/proteus-$TRYTOND_VERSION.$PROTEUS_REVISION"
+    SCRIPT="$REPOSITORY_PATH/modules/trytond_currency-$TRYTOND_VERSION.$CURRENCY_REVISION/scripts/import_currencies.py"
+    $PYTHON $SCRIPT -d $DATABASE -c "$BASE_DIR/trytond.conf"
+}
+
 download_sao() {
     download_tar "tryton-sao-$TRYTOND_VERSION.$SAO_REVISION" "$REPOSITORY_PATH/gui" "tgz"
     mv "$REPOSITORY_PATH/gui/package" "$REPOSITORY_PATH/gui/sao-$TRYTOND_VERSION.$SAO_REVISION"
@@ -269,6 +281,14 @@ case "$ACTION" in
 
         download_proteus)
             download_proteus
+            ;;
+
+        import_countries)
+            import_countries
+            ;;
+
+        import_currencies)
+            import_currencies
             ;;
 
         update_module)
