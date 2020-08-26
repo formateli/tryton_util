@@ -66,8 +66,9 @@ ACTION=""
 DATABASE=""
 MODULE=""
 ALL=0
+LOG=0
 
-while getopts s:a:d:m:x option
+while getopts s:a:d:m:x:l option
 do
 case "${option}" in
         s) SYSTEM=${OPTARG};;
@@ -75,6 +76,7 @@ case "${option}" in
         d) DATABASE=${OPTARG};;
         m) MODULE=${OPTARG};;
         x) ALL=1;;
+        l) LOG=1;;
     esac
 done
 
@@ -134,7 +136,11 @@ link_modules() {
 run() {
     verify_file "$BASE_DIR/trytond.conf"
     link_modules
-    $PYTHON $TRYTOND/bin/trytond -v -c $BASE_DIR/trytond.conf
+    if [ "$LOG" == 1 ]; then
+        $PYTHON $TRYTOND/bin/trytond -v -c $BASE_DIR/trytond.conf --logconf=$BASE_DIR/log.conf
+    else
+        $PYTHON $TRYTOND/bin/trytond -v -c $BASE_DIR/trytond.conf
+    fi
 }
 
 run_cron() {
@@ -174,7 +180,11 @@ update_module(){
 
     verify_file "$BASE_DIR/trytond.conf"
     link_modules
-    $PYTHON $TRYTOND/bin/trytond-admin -v -c "$BASE_DIR/trytond.conf" -d $DATABASE -u $MDS
+    if [ "$LOG" == 1 ]; then
+        $PYTHON $TRYTOND/bin/trytond-admin -v -c "$BASE_DIR/trytond.conf" -d $DATABASE -u $MDS -vvv --logconf=$BASE_DIR/log.conf
+    else
+        $PYTHON $TRYTOND/bin/trytond-admin -v -c "$BASE_DIR/trytond.conf" -d $DATABASE -u $MDS
+    fi
 }
 
 link_sao() {
