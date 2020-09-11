@@ -68,7 +68,7 @@ MODULE=""
 ALL=0
 LOG=0
 
-while getopts s:a:d:m:x:l option
+while getopts s:a:d:m:xl option
 do
 case "${option}" in
         s) SYSTEM=${OPTARG};;
