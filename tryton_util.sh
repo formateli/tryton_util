@@ -4,7 +4,7 @@
 #
 # A simple bash script for tryton tasks.
 #
-# Copyright (C) 2018-2020 Fredy Ramirez - <http://www.formateli.com>
+# Copyright (C) 2018-2022 Fredy Ramirez - <http://www.formateli.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
