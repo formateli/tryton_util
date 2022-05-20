@@ -25,7 +25,21 @@ DOWNLOAD_SERVER="https://downloads-cdn.tryton.org"
 
 
 show_help(){
-    echo $"Usage: $0 { help | init | run | test | download | download_sao | update_module | set_password | ulink}"
+    HLP=$'    help
+    download -s system
+    download_proteus -s system
+    download_sao -s system
+    import_countries -s system -d databse
+    import_currencies -s system -d database
+    init -s system -d database
+    install_sao -s system
+    run -s system
+    run_uwsgi -s system
+    set_password -s system -d database
+    update_module -s system -d database -m module'
+    echo $"Usage $0 command -a action {options}"
+    echo $"Actions:"
+    echo "$HLP"
     exit
 }
 
@@ -148,6 +162,15 @@ run_cron() {
     $PYTHON $TRYTOND/bin/trytond-cron -v -c $BASE_DIR/trytond.conf -d $DATABASE
 }
 
+run_uwsgi() {
+    verify_file "$BASE_DIR/uwsgi.conf"
+    link_modules
+    export PYTHONPATH="$TRYTOND:$PYTHONPATH"
+    export TRYTOND_CONFIG="$BASE_DIR/trytond.conf"
+    export PYTHONOPTIMIZE=1
+    uwsgi --ini $BASE_DIR/uwsgi.conf
+}
+
 test() {
     export PYTHONPATH=$TRYTOND
     link_modules
@@ -263,6 +286,10 @@ case "$ACTION" in
 
         run_cron)
             run_cron
+            ;;
+
+        run_uwsgi)
+            run_uwsgi
             ;;
 
         init)
