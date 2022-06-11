@@ -36,7 +36,8 @@ show_help(){
     run -s system
     run_uwsgi -s system
     set_password -s system -d database
-    update_module -s system -d database -m module'
+    update_module -s system -d database -m module
+    test -s system -m modules'
     echo $"Usage $0 command -a action {options}"
     echo $"Actions:"
     echo "$HLP"
@@ -174,7 +175,7 @@ run_uwsgi() {
 test() {
     export PYTHONPATH=$TRYTOND
     link_modules
-    $PYTHON $TRYTOND/trytond/tests/run-tests.py -v -f -m $MODULE
+    $PYTHON -m unittest discover -s trytond.modules.$MODULE.tests
 }
 
 init() {
