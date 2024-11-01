@@ -33,10 +33,11 @@ show_help(){
     import_currencies -s system -d database
     init -s system -d database
     install_sao -s system
-    run -s system
+    run -s system [-l for logging]
     run_uwsgi -s system
     set_password -s system -d database
-    update_module -s system -d database -m module'
+    update_module -s system -d database -m module [-x (for all modules)]
+    test -s system -m modules'
     echo $"Usage $0 command -a action {options}"
     echo $"Actions:"
     echo "$HLP"
@@ -168,13 +169,21 @@ run_uwsgi() {
     export PYTHONPATH="$TRYTOND:$PYTHONPATH"
     export TRYTOND_CONFIG="$BASE_DIR/trytond.conf"
     export PYTHONOPTIMIZE=1
-    uwsgi --ini $BASE_DIR/uwsgi.conf
+    if [ "$LOG" == 1 ]; then
+	verify_file "$BASE_DIR/log.conf"
+	export TRYTOND_LOGGING_CONFIG="$BASE_DIR/log.conf"
+    fi
+    if [[ -z "${UWSGI_PID_FILE}" ]]; then
+        uwsgi --ini $BASE_DIR/uwsgi.conf
+    else
+        uwsgi --ini $BASE_DIR/uwsgi.conf --safe-pidfile $UWSGI_PID_FILE
+    fi
 }
 
 test() {
     export PYTHONPATH=$TRYTOND
     link_modules
-    $PYTHON $TRYTOND/trytond/tests/run-tests.py -v -f -m $MODULE
+    $PYTHON -m unittest discover -s trytond.modules.$MODULE.tests
 }
 
 init() {
