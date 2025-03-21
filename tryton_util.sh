@@ -4,7 +4,7 @@
 #
 # A simple bash script for tryton tasks.
 #
-# Copyright (C) 2018-2022 Fredy Ramirez - <http://www.formateli.com>
+# Copyright (C) 2018-2025 Fredy Ramirez - <http://www.formateli.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ show_help(){
     install_sao -s system
     run -s system [-l for logging]
     run_uwsgi -s system
+    run_gunicorn -s system
     set_password -s system -d database
     update_module -s system -d database -m module [-x (for all modules)]
     test -s system -m modules'
@@ -180,6 +181,23 @@ run_uwsgi() {
     fi
 }
 
+run_gunicorn() {
+    verify_file "$BASE_DIR/gunicorn.conf.py"
+    link_modules
+    export PYTHONPATH="$TRYTOND:$PYTHONPATH"
+    export TRYTOND_CONFIG="$BASE_DIR/trytond.conf"
+    export PYTHONOPTIMIZE=1
+    if [ "$LOG" == 1 ]; then
+	verify_file "$BASE_DIR/log.conf"
+	export TRYTOND_LOGGING_CONFIG="$BASE_DIR/log.conf"
+    fi
+    if [[ -z "${GUNICORN_PID_FILE}" ]]; then
+        gunicorn --config $BASE_DIR/gunicorn.conf.py trytond.application:app
+    else
+        gunicorn --config $BASE_DIR/gunicorn.conf.py --pid $GUNICORN_PID_FILE trytond.application:app
+    fi
+}
+
 test() {
     export PYTHONPATH=$TRYTOND
     link_modules
@@ -300,6 +318,10 @@ case "$ACTION" in
         run_uwsgi)
             run_uwsgi
             ;;
+	
+	run_gunicorn)
+	    run_gunicorn
+	    ;;
 
         init)
             init
