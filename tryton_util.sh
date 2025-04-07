@@ -33,9 +33,9 @@ show_help(){
     import_currencies -s system -d database
     init -s system -d database
     install_sao -s system
-    run -s system [-l for logging]
-    run_uwsgi -s system
-    run_gunicorn -s system
+    run -s system [-l for logging, -c copy instead of link]
+    run_uwsgi -s system [-l for logging, -c copy instead of link]
+    run_gunicorn -s system [-l for logging, -c copy instead of link]
     set_password -s system -d database
     update_module -s system -d database -m module [-x (for all modules)]
     test -s system -m modules'
@@ -84,7 +84,7 @@ MODULE=""
 ALL=0
 LOG=0
 
-while getopts s:a:d:m:xl option
+while getopts s:a:d:m:xlc option
 do
 case "${option}" in
         s) SYSTEM=${OPTARG};;
@@ -93,6 +93,7 @@ case "${option}" in
         m) MODULE=${OPTARG};;
         x) ALL=1;;
         l) LOG=1;;
+	c) COPYX=1;;
     esac
 done
 
@@ -143,7 +144,12 @@ link_modules() {
         verify_dir $DIRX
         if [ ! -d "$TRYTOND/trytond/modules/$NAME" ]; then
             echo " $NAME"
-            ln -s $DIRX "$TRYTOND/trytond/modules/$NAME"
+
+            if [ "$COPYX" == 1 ]; then
+	        cp -r $DIRX "$TRYTOND/trytond/modules/$NAME"
+	    else
+                ln -s $DIRX "$TRYTOND/trytond/modules/$NAME"
+	    fi
         fi
         count=$(( $count + 1 ))
     done
@@ -290,7 +296,6 @@ download() {
     done
 }
 
-
 lnk() {
     link_modules
 }
@@ -301,7 +306,12 @@ ulink() {
     do
       if [ -d "$entry" ]; then
         echo " $entry"
-        unlink $entry
+
+        if [ "$COPYX" == 1 ]; then
+            rm -rf $entry
+	else
+            unlink $entry
+        fi
       fi
     done
 }
