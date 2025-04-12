@@ -287,13 +287,24 @@ download() {
     count=0
     while [ "x${MODULES[count]}" != "x" ]
     do
-        read NAME REV < <(get_name_rev "${MODULES[count]}")
+        read NAME REV GIT BRANCH < <(get_name_rev "${MODULES[count]}")
         if [[ $REV == ?(-)+([0-9]) ]]; then
             DIR_NAME="trytond_$NAME-$TRYTOND_VERSION.$REV"
             download_tar $DIR_NAME "$REPOSITORY_PATH/modules" "tar.gz"
+	else
+            if [ ! -d "$DEVELOP_PATH/$REV" ]; then
+		cd $DEVELOP_PATH
+		echo "Git cloning $GIT/$REV..."
+                git clone https://$GIT/$REV.git -b $BRANCH
+            else
+		echo "Git pulling $GIT/$REV..."
+		cd $DEVELOP_PATH/$REV
+		git pull origin
+            fi
         fi
         count=$(( $count + 1 ))
     done
+
 }
 
 lnk() {
