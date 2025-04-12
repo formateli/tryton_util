@@ -134,7 +134,7 @@ link_modules() {
     count=0
     while [ "x${MODULES[count]}" != "x" ]
     do
-        read NAME REV < <(get_name_rev "${MODULES[count]}")
+        read NAME REV GIT BRANCH < <(get_name_rev "${MODULES[count]}")
         if [[ $REV == ?(-)+([0-9]) ]]; then
             DIRX="$REPOSITORY_PATH/modules/trytond_$NAME-$TRYTOND_VERSION.$REV"
         else
