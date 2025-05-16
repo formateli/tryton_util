@@ -85,7 +85,7 @@ MODULE=""
 ALL=0
 LOG=0
 
-while getopts s:a:d:m:xlc option
+while getopts s:a:d:m:xl option
 do
 case "${option}" in
         s) SYSTEM=${OPTARG};;
@@ -94,7 +94,6 @@ case "${option}" in
         m) MODULE=${OPTARG};;
         x) ALL=1;;
         l) LOG=1;;
-	c) COPYX=1;;
     esac
 done
 
@@ -131,7 +130,7 @@ get_name_rev(){
 
 link_modules() {
     ulink
-    echo "Linking modules..."
+    echo "Copy modules..."
     count=0
     while [ "x${MODULES[count]}" != "x" ]
     do
@@ -145,12 +144,7 @@ link_modules() {
         verify_dir $DIRX
         if [ ! -d "$TRYTOND/trytond/modules/$NAME" ]; then
             echo " $NAME"
-
-            if [ "$COPYX" == 1 ]; then
-	        cp -r $DIRX "$TRYTOND/trytond/modules/$NAME"
-	    else
-                ln -s $DIRX "$TRYTOND/trytond/modules/$NAME"
-	    fi
+	    cp -r $DIRX "$TRYTOND/trytond/modules/$NAME"
         fi
         count=$(( $count + 1 ))
     done
@@ -313,17 +307,12 @@ lnk() {
 }
 
 ulink() {
-    echo "Unlinking modules..."
+    echo "Deleting modules..."
     for entry in "$TRYTOND/trytond/modules"/*
     do
       if [ -d "$entry" ]; then
         echo " $entry"
-
-        if [ "$COPYX" == 1 ]; then
-            rm -rf $entry
-	else
-            unlink $entry
-        fi
+        rm -rf $entry
       fi
     done
 }
