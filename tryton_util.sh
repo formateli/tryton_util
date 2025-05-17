@@ -217,17 +217,56 @@ set_password(){
 }
 
 update_module(){
+    #if [ "$ALL" == 1 ]; then
+    #    count=0
+    #    while [ "x${MODULES[count]}" != "x" ]
+    #    do
+    #        read NAME REV < <(get_name_rev "${MODULES[count]}")
+    #        MDS=$MDS" "$NAME
+    #        count=$(( $count + 1 ))
+    #    done
+    #else
+    #    MDS=$MODULE
+    #fi
+
+    if [ "$DATABASE" == "" ]; then
+        echo "ERROR: Database must be declared. Use -d"
+	exit
+    fi
+
+    if ! [[ -v "$DATABASE" ]]; then
+        echo "ERROR: **$DATABASE** is not defined in config file."
+	exit
+    fi
+
+    res="${!DATABASE}"
+    arr=($res)
+
     if [ "$ALL" == 1 ]; then
+	MDS="ir res"
         count=0
-        while [ "x${MODULES[count]}" != "x" ]
+        while [ "x${arr[count]}" != "x" ]
         do
-            read NAME REV < <(get_name_rev "${MODULES[count]}")
-            MDS=$MDS" "$NAME
+            MDS=$MDS" "${arr[count]}
             count=$(( $count + 1 ))
         done
     else
-        MDS=$MODULE
+        while [ "x${arr[count]}" != "x" ]
+        do
+            if [ "${arr[count]}" == $MODULE ]; then
+                MDS="${arr[count]}"
+	        break
+	    fi
+            count=$(( $count + 1 ))
+	done
     fi
+
+    if [ -z ${MDS+x} ]; then
+        echo "ERROR: No modules found to update."
+	exit
+    fi
+
+    echo $MDS
 
     verify_file "$BASE_DIR/trytond.conf"
     link_modules
