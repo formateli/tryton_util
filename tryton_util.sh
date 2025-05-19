@@ -137,13 +137,15 @@ link_modules() {
         read NAME REV GIT BRANCH < <(get_name_rev "${MODULES[count]}")
         if [[ $REV == ?(-)+([0-9]) ]]; then
             DIRX="$REPOSITORY_PATH/modules/trytond_$NAME-$TRYTOND_VERSION.$REV"
+	    VERSION=$REV
         else
             DIRX="$DEVELOP_PATH/$REV"
+	    VERSION="DEV"
         fi
 
         verify_dir $DIRX
         if [ ! -d "$TRYTOND/trytond/modules/$NAME" ]; then
-            echo " $NAME"
+            echo " $NAME - v$VERSION"
 	    cp -r $DIRX "$TRYTOND/trytond/modules/$NAME"
         fi
         count=$(( $count + 1 ))
@@ -217,18 +219,6 @@ set_password(){
 }
 
 update_module(){
-    #if [ "$ALL" == 1 ]; then
-    #    count=0
-    #    while [ "x${MODULES[count]}" != "x" ]
-    #    do
-    #        read NAME REV < <(get_name_rev "${MODULES[count]}")
-    #        MDS=$MDS" "$NAME
-    #        count=$(( $count + 1 ))
-    #    done
-    #else
-    #    MDS=$MODULE
-    #fi
-
     if [ "$DATABASE" == "" ]; then
         echo "ERROR: Database must be declared. Use -d"
 	exit
@@ -266,7 +256,7 @@ update_module(){
 	exit
     fi
 
-    echo $MDS
+    echo "Updating module(s) $MDS ..."
 
     verify_file "$BASE_DIR/trytond.conf"
     link_modules
@@ -338,7 +328,6 @@ download() {
         fi
         count=$(( $count + 1 ))
     done
-
 }
 
 lnk() {
