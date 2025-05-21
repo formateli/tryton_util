@@ -38,6 +38,7 @@ show_help(){
     run_gunicorn -s system [-l for logging, -c copy instead of link]
     set_password -s system -d database
     update_module -s system -d database -m module [-x (for all modules)]
+    load_language -s system -d database -i lang_code
     test -s system -m modules'
     echo $"Usage $0 command -a action {options}"
     echo $"Actions:"
@@ -82,16 +83,18 @@ SYSTEM="???"
 ACTION=""
 DATABASE=""
 MODULE=""
+LANGS=""
 ALL=0
 LOG=0
 
-while getopts s:a:d:m:xl option
+while getopts s:a:d:m:i:xl option
 do
 case "${option}" in
         s) SYSTEM=${OPTARG};;
         a) ACTION=${OPTARG};;
         d) DATABASE=${OPTARG};;
         m) MODULE=${OPTARG};;
+        i) LANGS=${OPTARG};;
         x) ALL=1;;
         l) LOG=1;;
     esac
@@ -272,6 +275,18 @@ link_sao() {
     ln -s "$REPOSITORY_PATH/gui/sao-$TRYTOND_VERSION.$SAO_REVISION" "$BASE_DIR/sao"
 }
 
+load_language() {
+    if [ "$DATABASE" == "" ]; then
+        echo "ERROR: Database must be declared. Use -d"
+        exit
+    fi
+    if [ "$LANGS" == "" ]; then
+        echo "ERROR: Language must be declared. Use -i"
+        exit
+    fi
+    $PYTHON $TRYTOND/bin/trytond-admin -v -c "$BASE_DIR/trytond.conf" -d $DATABASE -l $LANGS
+}
+
 download_proteus() {
     download_tar "proteus-$TRYTOND_VERSION.$PROTEUS_REVISION" "$REPOSITORY_PATH/gui" "tar.gz"
 }
@@ -400,6 +415,10 @@ case "$ACTION" in
 
         update_module)
             update_module
+            ;;
+
+        load_language)
+            load_language
             ;;
 
         set_password)
