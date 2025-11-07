@@ -26,18 +26,18 @@ DOWNLOAD_SERVER="https://downloads-cdn.tryton.org"
 
 show_help(){
     HLP=$'    help
-    download -s system
+    download -s system [-r repository path]
     download_proteus -s system
     download_sao -s system
     import_countries -s system -d databse
     import_currencies -s system -d database
     init -s system -d database
     install_sao -s system
-    run -s system [-l for logging, -c copy instead of link]
-    run_uwsgi -s system [-l for logging, -c copy instead of link]
-    run_gunicorn -s system [-l for logging, -c copy instead of link]
+    run -s system [-r repository path, -l for logging]
+    run_uwsgi -s system [-r repository_path, -l for logging]
+    run_gunicorn -s system [-l for logging]
     set_password -s system -d database
-    update_module -s system -d database -m module [-x (for all modules)]
+    update_module -s system -d database -m module [-x for all modules]
     load_language -s system -d database -i lang_code
     test -s system -m modules'
     echo $"Usage $0 command -a action {options}"
@@ -83,17 +83,19 @@ SYSTEM="???"
 ACTION=""
 DATABASE=""
 MODULE=""
+REPOSITORY=""
 LANGS=""
 ALL=0
 LOG=0
 
-while getopts s:a:d:m:i:xl option
+while getopts s:a:d:m:i:r:xl option
 do
 case "${option}" in
         s) SYSTEM=${OPTARG};;
         a) ACTION=${OPTARG};;
         d) DATABASE=${OPTARG};;
         m) MODULE=${OPTARG};;
+	r) REPOSITORY=${OPTARG};;
         i) LANGS=${OPTARG};;
         x) ALL=1;;
         l) LOG=1;;
@@ -109,8 +111,15 @@ verify_dir $BASE_DIR
 verify_file $BASE_DIR/config.sh
 
 # Get TRYTOND_VERSION, TRYTOND_REVISION, SAO_REVISION,
-# PYTHON, DEVELOP_PATH, REPOSITORY_PATH, MODULES
+# PYTHON, MAIN_PATH, MODULES
 source $BASE_DIR/config.sh
+
+if [ "$REPOSITORY" != "" ]; then
+    MAIN_PATH=$REPOSITORY
+fi
+
+REPOSITORY_PATH="$MAIN_PATH/tryton"
+DEVELOP_PATH=$MAIN_PATH/git/tryton/$TRYTOND_VERSION
 
 verify_dir $REPOSITORY_PATH
 REPOSITORY_PATH="$REPOSITORY_PATH/$TRYTOND_VERSION"
@@ -149,7 +158,7 @@ link_modules() {
         verify_dir $DIRX
         if [ ! -d "$TRYTOND/trytond/modules/$NAME" ]; then
             echo " $NAME - v$VERSION"
-	    cp -r $DIRX "$TRYTOND/trytond/modules/$NAME"
+	    cp -r "$DIRX" "$TRYTOND/trytond/modules/$NAME" 
         fi
         count=$(( $count + 1 ))
     done
