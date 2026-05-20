@@ -4,7 +4,7 @@
 #
 # A simple bash script for tryton tasks.
 #
-# Copyright (C) 2018-2022 Fredy Ramirez - <http://www.formateli.com>
+# Copyright (C) 2018-2025 Fredy Ramirez - <http://www.formateli.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,17 +26,19 @@ DOWNLOAD_SERVER="https://downloads-cdn.tryton.org"
 
 show_help(){
     HLP=$'    help
-    download -s system
+    download -s system [-r repository path]
     download_proteus -s system
     download_sao -s system
     import_countries -s system -d databse
     import_currencies -s system -d database
     init -s system -d database
     install_sao -s system
-    run -s system [-l for logging]
-    run_uwsgi -s system
+    run -s system [-r repository path, -l for logging]
+    run_uwsgi -s system [-r repository_path, -l for logging]
+    run_gunicorn -s system [-l for logging]
     set_password -s system -d database
-    update_module -s system -d database -m module [-x (for all modules)]
+    update_module -s system -d database -m module [-x for all modules]
+    load_language -s system -d database -i lang_code
     test -s system -m modules'
     echo $"Usage $0 command -a action {options}"
     echo $"Actions:"
@@ -67,7 +69,8 @@ verify_dir(){
 download_tar(){
     if [ ! -d "$2/$1" ]; then
         echo " Downloading $1 FROM $DOWNLOAD_SERVER..."
-        wget "$DOWNLOAD_SERVER/$TRYTOND_VERSION/$1.$3"
+        #wget "$DOWNLOAD_SERVER/$TRYTOND_VERSION/$1.$3"
+	curl -O "$DOWNLOAD_SERVER/$TRYTOND_VERSION/$1.$3"
         mv ./$1.$3 $2
         echo " Uncompressing..."
         tar -xzvf $2/$1.$3 -C $2
@@ -80,16 +83,20 @@ SYSTEM="???"
 ACTION=""
 DATABASE=""
 MODULE=""
+REPOSITORY=""
+LANGS=""
 ALL=0
 LOG=0
 
-while getopts s:a:d:m:xl option
+while getopts s:a:d:m:i:r:xl option
 do
 case "${option}" in
         s) SYSTEM=${OPTARG};;
         a) ACTION=${OPTARG};;
         d) DATABASE=${OPTARG};;
         m) MODULE=${OPTARG};;
+	r) REPOSITORY=${OPTARG};;
+        i) LANGS=${OPTARG};;
         x) ALL=1;;
         l) LOG=1;;
     esac
@@ -104,8 +111,15 @@ verify_dir $BASE_DIR
 verify_file $BASE_DIR/config.sh
 
 # Get TRYTOND_VERSION, TRYTOND_REVISION, SAO_REVISION,
-# PYTHON, DEVELOP_PATH, REPOSITORY_PATH, MODULES
+# PYTHON, MAIN_PATH, MODULES
 source $BASE_DIR/config.sh
+
+if [ "$REPOSITORY" != "" ]; then
+    MAIN_PATH=$REPOSITORY
+fi
+
+REPOSITORY_PATH="$MAIN_PATH/tryton"
+DEVELOP_PATH=$MAIN_PATH/git/tryton/$TRYTOND_VERSION
 
 verify_dir $REPOSITORY_PATH
 REPOSITORY_PATH="$REPOSITORY_PATH/$TRYTOND_VERSION"
@@ -128,21 +142,23 @@ get_name_rev(){
 
 link_modules() {
     ulink
-    echo "Linking modules..."
+    echo "Copy modules..."
     count=0
     while [ "x${MODULES[count]}" != "x" ]
     do
-        read NAME REV < <(get_name_rev "${MODULES[count]}")
+        read NAME REV GIT BRANCH < <(get_name_rev "${MODULES[count]}")
         if [[ $REV == ?(-)+([0-9]) ]]; then
             DIRX="$REPOSITORY_PATH/modules/trytond_$NAME-$TRYTOND_VERSION.$REV"
+	    VERSION=$REV
         else
             DIRX="$DEVELOP_PATH/$REV"
+	    VERSION="DEV"
         fi
 
         verify_dir $DIRX
         if [ ! -d "$TRYTOND/trytond/modules/$NAME" ]; then
-            echo " $NAME"
-            ln -s $DIRX "$TRYTOND/trytond/modules/$NAME"
+            echo " $NAME - v$VERSION"
+	    cp -r "$DIRX" "$TRYTOND/trytond/modules/$NAME" 
         fi
         count=$(( $count + 1 ))
     done
@@ -180,6 +196,23 @@ run_uwsgi() {
     fi
 }
 
+run_gunicorn() {
+    verify_file "$BASE_DIR/gunicorn.conf.py"
+    link_modules
+    export PYTHONPATH="$TRYTOND:$PYTHONPATH"
+    export TRYTOND_CONFIG="$BASE_DIR/trytond.conf"
+    export PYTHONOPTIMIZE=1
+    if [ "$LOG" == 1 ]; then
+	verify_file "$BASE_DIR/log.conf"
+	export TRYTOND_LOGGING_CONFIG="$BASE_DIR/log.conf"
+    fi
+    if [[ -z "${GUNICORN_PID_FILE}" ]]; then
+        gunicorn --config $BASE_DIR/gunicorn.conf.py trytond.application:app
+    else
+        gunicorn --config $BASE_DIR/gunicorn.conf.py --pid $GUNICORN_PID_FILE trytond.application:app
+    fi
+}
+
 test() {
     export PYTHONPATH=$TRYTOND
     link_modules
@@ -198,17 +231,44 @@ set_password(){
 }
 
 update_module(){
+    if [ "$DATABASE" == "" ]; then
+        echo "ERROR: Database must be declared. Use -d"
+	exit
+    fi
+
+    if ! [[ -v "$DATABASE" ]]; then
+        echo "ERROR: **$DATABASE** is not defined in config file."
+	exit
+    fi
+
+    res="${!DATABASE}"
+    arr=($res)
+
     if [ "$ALL" == 1 ]; then
+	MDS="ir res"
         count=0
-        while [ "x${MODULES[count]}" != "x" ]
+        while [ "x${arr[count]}" != "x" ]
         do
-            read NAME REV < <(get_name_rev "${MODULES[count]}")
-            MDS=$MDS" "$NAME
+            MDS=$MDS" "${arr[count]}
             count=$(( $count + 1 ))
         done
     else
-        MDS=$MODULE
+        while [ "x${arr[count]}" != "x" ]
+        do
+            if [ "${arr[count]}" == $MODULE ]; then
+                MDS="${arr[count]}"
+	        break
+	    fi
+            count=$(( $count + 1 ))
+	done
     fi
+
+    if [ -z ${MDS+x} ]; then
+        echo "ERROR: No modules found to update."
+	exit
+    fi
+
+    echo "Updating module(s) $MDS ..."
 
     verify_file "$BASE_DIR/trytond.conf"
     link_modules
@@ -222,6 +282,18 @@ update_module(){
 link_sao() {
     unlink "$BASE_DIR/sao"
     ln -s "$REPOSITORY_PATH/gui/sao-$TRYTOND_VERSION.$SAO_REVISION" "$BASE_DIR/sao"
+}
+
+load_language() {
+    if [ "$DATABASE" == "" ]; then
+        echo "ERROR: Database must be declared. Use -d"
+        exit
+    fi
+    if [ "$LANGS" == "" ]; then
+        echo "ERROR: Language must be declared. Use -i"
+        exit
+    fi
+    $PYTHON $TRYTOND/bin/trytond-admin -v -c "$BASE_DIR/trytond.conf" -d $DATABASE -l $LANGS
 }
 
 download_proteus() {
@@ -263,27 +335,36 @@ download() {
     count=0
     while [ "x${MODULES[count]}" != "x" ]
     do
-        read NAME REV < <(get_name_rev "${MODULES[count]}")
+        read NAME REV GIT BRANCH < <(get_name_rev "${MODULES[count]}")
         if [[ $REV == ?(-)+([0-9]) ]]; then
             DIR_NAME="trytond_$NAME-$TRYTOND_VERSION.$REV"
             download_tar $DIR_NAME "$REPOSITORY_PATH/modules" "tar.gz"
+	else
+            if [ ! -d "$DEVELOP_PATH/$REV" ]; then
+		cd $DEVELOP_PATH
+		echo "Git cloning $GIT/$REV..."
+                git clone https://$GIT/$REV.git -b $BRANCH
+            else
+		echo "Git pulling $GIT/$REV..."
+		cd $DEVELOP_PATH/$REV
+		git pull origin
+            fi
         fi
         count=$(( $count + 1 ))
     done
 }
-
 
 lnk() {
     link_modules
 }
 
 ulink() {
-    echo "Unlinking modules..."
+    echo "Deleting modules..."
     for entry in "$TRYTOND/trytond/modules"/*
     do
       if [ -d "$entry" ]; then
         echo " $entry"
-        unlink $entry
+        rm -rf $entry
       fi
     done
 }
@@ -300,6 +381,10 @@ case "$ACTION" in
         run_uwsgi)
             run_uwsgi
             ;;
+	
+	run_gunicorn)
+	    run_gunicorn
+	    ;;
 
         init)
             init
@@ -339,6 +424,10 @@ case "$ACTION" in
 
         update_module)
             update_module
+            ;;
+
+        load_language)
+            load_language
             ;;
 
         set_password)
