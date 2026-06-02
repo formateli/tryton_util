@@ -129,6 +129,12 @@ create_dir "$REPOSITORY_PATH/gui"
 
 TRYTOND="$REPOSITORY_PATH/trytond-$TRYTOND_VERSION.$TRYTOND_REVISION"
 
+SCRIPT_ADMIN=$TRYTOND/bin/trytond-admin
+if [ ! -d "$SCRIPT_ADMIN" ]; then
+    SCRIPT_ADMIN=$TRYTOND/trytond/cli/admin.py
+fi
+verify_file $SCRIPT_ADMIN
+
 echo "Running tool for module $MODULE"
 
 get_name_rev(){
@@ -273,9 +279,11 @@ update_module(){
     verify_file "$BASE_DIR/trytond.conf"
     link_modules
     if [ "$LOG" == 1 ]; then
-        $PYTHON $TRYTOND/bin/trytond-admin -v -c "$BASE_DIR/trytond.conf" -d $DATABASE -u $MDS -vvv --logconf=$BASE_DIR/log.conf
+        #$PYTHON $TRYTOND/bin/trytond-admin -v -c "$BASE_DIR/trytond.conf" -d $DATABASE -u $MDS -vvv --logconf=$BASE_DIR/log.conf
+        $PYTHON $SCRIPT_ADMIN  -v -c "$BASE_DIR/trytond.conf" -d $DATABASE -u $MDS -vvv --logconf=$BASE_DIR/log.conf
     else
-        $PYTHON $TRYTOND/bin/trytond-admin -v -c "$BASE_DIR/trytond.conf" -d $DATABASE -u $MDS
+        #$PYTHON $TRYTOND/bin/trytond-admin -v -c "$BASE_DIR/trytond.conf" -d $DATABASE -u $MDS
+	$PYTHON $SCRIPT_ADMIN -v -c "$BASE_DIR/trytond.conf" -d $DATABASE -u $MDS
     fi
 }
 
