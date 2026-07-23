@@ -27,6 +27,7 @@ DOWNLOAD_SERVER="https://downloads-cdn.tryton.org"
 show_help(){
     HLP=$'    help
     download -s system [-r repository path]
+    download_naiad -s system
     download_proteus -s system
     download_sao -s system
     import_countries -s system -d databse
@@ -133,7 +134,6 @@ SCRIPT_ADMIN=$TRYTOND/bin/trytond-admin
 if [ ! -d "$SCRIPT_ADMIN" ]; then
     SCRIPT_ADMIN=$TRYTOND/trytond/cli/admin.py
 fi
-verify_file $SCRIPT_ADMIN
 
 echo "Running tool for module $MODULE"
 
@@ -308,6 +308,12 @@ download_proteus() {
     download_tar "proteus-$TRYTOND_VERSION.$PROTEUS_REVISION" "$REPOSITORY_PATH/gui" "tar.gz"
 }
 
+download_naiad() {
+    rm -rf $REPOSITORY_PATH/gui/*naiad*
+    download_tar "tryton_naiad-$TRYTOND_VERSION.$NAIAD_REVISION" "$REPOSITORY_PATH/gui" "tar.gz"
+    mv "$REPOSITORY_PATH/gui/tryton_naiad-$TRYTOND_VERSION.$NAIAD_REVISION" "$REPOSITORY_PATH/gui/naiad"
+}
+
 import_countries() {
     export PYTHONPATH="$TRYTOND:$REPOSITORY_PATH/gui/proteus-$TRYTOND_VERSION.$PROTEUS_REVISION"
     SCRIPT="$REPOSITORY_PATH/modules/trytond_country-$TRYTOND_VERSION.$COUNTRY_REVISION/scripts/import_countries.py"
@@ -420,6 +426,10 @@ case "$ACTION" in
 
         download_proteus)
             download_proteus
+            ;;
+
+        download_naiad)
+            download_naiad
             ;;
 
         import_countries)
